@@ -29,6 +29,7 @@ class Player(pygame.sprite.Sprite):
         self.movey = 0
         self.frame = 0
         self.health = 10
+        self.on_platform = False
 
         self.images = []
         for i in range(1, 9):
@@ -45,7 +46,7 @@ class Player(pygame.sprite.Sprite):
 
     def jump(self):
         hit_ground = pygame.sprite.spritecollide(self, ground_list, False)
-        if hit_ground:
+        if hit_ground or self.on_platform:
             self.movey -= 33
 
     def update(self):
@@ -86,8 +87,11 @@ class Player(pygame.sprite.Sprite):
         for item in hit_list2:
             self.movey = -3
 
+        self.on_platform = False
+
         for p in platforms:
             if pygame.sprite.collide_rect(self, p):
+                self.on_platform = True
                 if self.movey > 0:
                     self.rect.bottom = p.rect.top
                     self.movey = -3
@@ -221,25 +225,25 @@ level = [
     "                          "
 ]
 
+x = 0
+y = 0
+for row in level:
+    for item in row:
+        if item == "_":
+            pf = Pl(x, y)
+            pl_group.add(pf)
+            platforms.append(pf)
+
+            # pf = pygame.Surface((PL_WIDTH, PL_HEIGHT))
+            # pf.fill(pygame.Color(PL_COLOR))
+            # world.blit(pf, (x, y))
+        x += PL_WIDTH
+    y += PL_HEIGHT
+    x = 0
+
 ''' Основной цикл игры '''
 while main:
     world.blit(backdrop, backdropbox)
-
-    x = 0
-    y = 0
-    for row in level:
-        for item in row:
-            if item == "_":
-                pf = Pl(x, y)
-                pl_group.add(pf)
-                platforms.append(pf)
-
-                #pf = pygame.Surface((PL_WIDTH, PL_HEIGHT))
-                #pf.fill(pygame.Color(PL_COLOR))
-                #world.blit(pf, (x, y))
-            x += PL_WIDTH
-        y += PL_HEIGHT
-        x = 0
 
 
     player.gravity()
