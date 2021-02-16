@@ -47,7 +47,7 @@ class Player(pygame.sprite.Sprite):
     def jump(self):
         hit_ground = pygame.sprite.spritecollide(self, ground_list, False)
         if hit_ground or self.on_platform:
-            self.movey -= 33
+            self.movey -= 35
 
     def update(self):
         self.rect.x += self.movex
@@ -94,7 +94,7 @@ class Player(pygame.sprite.Sprite):
                 self.on_platform = True
                 if self.movey > 0:
                     self.rect.bottom = p.rect.top
-                    self.movey = -3
+                    self.movey = 0
 
     def gravity(self):
         self.movey += 3
@@ -167,7 +167,16 @@ class Pl(pygame.sprite.Sprite):
         self.rect.y = locy
 
 
+class Camera(object):
+    def __init__(self, camera_func, width, height):
+        self.camera_func = camera_func
+        self.state = pygame.Rect(0, 0, width, height)
 
+    def apply(self, target):
+        return target.rect.move(self.state.topleft)
+
+    def update(self, target):
+        self.state = self.camera_func(self.state, target.rect)
 
 
 ''' Настройки '''
@@ -204,26 +213,13 @@ text1 = font1.render("Конец игры!", True, BLACK)
 pl_group = pygame.sprite.Group()
 platforms = []
 
-level = [
-    "                          ",
-    "                          ",
-    "                          ",
-    "                          ",
-    "                    ____  ",
-    "                          ",
-    "                          ",
-    "            ____          ",
-    "                          ",
-    "       ______             ",
-    "                    ____  ",
-    "                          ",
-    "                          ",
-    "            ____          ",
-    "                          ",
-    "       ______             ",
-    "                    ____  ",
-    "                          "
-]
+level = []
+with open("level.txt", "r") as f:
+    for line in f:
+        level.append(line.replace("\n", "")
+                     .replace("\"", "")
+                     .replace(",", ""))
+
 
 x = 0
 y = 0
@@ -241,18 +237,41 @@ for row in level:
     y += PL_HEIGHT
     x = 0
 
+
+def camera_configure(camera, target_rect):
+    l, t, _, _ = target_rect
+    _, _, w, h = camera
+
+    l, t = -l + worldx / 2, -t + worldy / 2
+
+    l = min(0, l)
+    l = max(-(camera.width - worldx), l)
+    t = max(-(camera.height - worldy), t)
+    t = min(0, t)
+
+    return pygame.Rect(l, t, w, h)
+
+total_level_width = worldx + 500
+total_level_height = worldy
+
+camera = Camera(camera_configure, total_level_width, total_level_height)
+
 ''' Основной цикл игры '''
 while main:
     world.blit(backdrop, backdropbox)
 
-
     player.gravity()
     player.update()
+    #pl_group.draw(world)
+    #ground_list.draw(world)
+    #enemy_list.draw(world)
+    #player_list.draw(world)
 
-    pl_group.draw(world)
-    ground_list.draw(world)
-    enemy_list.draw(world)
-    player_list.draw(world)
+    camera.update(player)
+
+    for i in [pl_group, ground_list, enemy_list, player_list]:
+        for e in i:
+            world.blit(e.image, camera.apply(e))
 
     for enemy in enemy_list:
         enemy.move()
