@@ -64,8 +64,6 @@ class Player(pygame.sprite.Sprite):
 
         # Двигаемся вправо
         if self.movex > 0:
-            if self.rect.x > worldx - 15:
-                self.rect.x -= 50
             self.frame += 1
             if self.frame > 3*ani:
                 self.frame = 0
@@ -98,6 +96,9 @@ class Player(pygame.sprite.Sprite):
 
     def gravity(self):
         self.movey += 3
+
+    def getHelth(self):
+        return self.health
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -141,7 +142,9 @@ class Level ():
         ground_list = pygame.sprite.Group()
         if lvl == 1:
             ground = Platform(x, y, w, h, 'block-ground.png')
+            ground2 = Platform(x+1100, y, w, h, 'block-ground.png')
             ground_list.add(ground)
+            ground_list.add(ground2)
         if lvl == 2:
             print("Level " + str(lvl))
         return ground_list
@@ -189,17 +192,6 @@ main = True
 
 ground_list = Level.ground(1, 0, worldy-53, 960, 53)
 
-player = Player()
-
-y = 500
-
-
-player.rect.x = 0
-y += 50
-player.rect.y = y
-
-player_list = pygame.sprite.Group()
-player_list.add(player)
 
 steps = 10
 
@@ -251,13 +243,47 @@ def camera_configure(camera, target_rect):
 
     return pygame.Rect(l, t, w, h)
 
-total_level_width = worldx + 500
+total_level_width = worldx + 1700
 total_level_height = worldy
 
 camera = Camera(camera_configure, total_level_width, total_level_height)
 
+def show_game_screen():
+    world.blit(backdrop, backdropbox)
+    text_name = font1.render("Супер-пингвин", True, BLACK)
+    # text_name.get_rect().midtop = (x, y)
+    world.blit(text_name, (worldx - 600, worldy / 4))
+    text_play = font1.render("Нажми клавишу 's', чтобы начать.", True, BLACK)
+    world.blit(text_play, (worldx - 800, worldy / 2))
+
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYUP:
+                if event.key == ord('s'):
+                    waiting = False
+
+
+game_over = True
+
 ''' Основной цикл игры '''
 while main:
+    if game_over:
+        show_game_screen()
+        game_over = False
+        player = Player()
+        y = 500
+        player.rect.x = 0
+        y += 50
+        player.rect.y = y
+        player_list = pygame.sprite.Group()
+        player_list.add(player)
+
+
     world.blit(backdrop, backdropbox)
 
     player.gravity()
@@ -276,12 +302,13 @@ while main:
     for enemy in enemy_list:
         enemy.move()
 
+    text_lives = font1.render("Жизни: " + str(player.getHelth()), True, BLACK)
+    world.blit(text_lives, (worldx - 200, 20))
+
     ''' Блок "Конец игры" начало'''
     if player.health == 0:
-        world.blit(text1, (10, 100))
-
-    if player.health < 0:
-        world.blit(text1, (10, 100))
+        game_over = True
+        # world.blit(text1, (10, 100))
 
     ''' Блок "Конец игры" конец'''
 
